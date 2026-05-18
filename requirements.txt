@@ -1,0 +1,19 @@
+# Track 1 — Waste Classification
+# Install with: pip install -r requirements.txt
+
+# Core ML
+tensorflow>=2.12.0,<2.16.0      # tf.keras, MobileNetV2, ImageDataGenerator
+scikit-learn>=1.3.0             # metrics, confusion_matrix, classification_report
+numpy>=1.24.0
+
+# Image handling
+Pillow>=9.5.0
+
+# Visualisation
+matplotlib>=3.7.0
+
+# Web demo
+streamlit>=1.28.0
+
+# Optional but helpful
+tqdm>=4.65.0                    # progress bars in custom loops

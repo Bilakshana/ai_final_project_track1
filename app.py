@@ -52,7 +52,7 @@ st.markdown("""
 
 @st.cache_resource(show_spinner="Loading model…")
 def load_model(path):
-    return tf.keras.models.load_model(path)
+    return tf.keras.models.load_model(path,compile=False)
 
 
 def predict(model, img):

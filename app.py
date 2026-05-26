@@ -9,7 +9,6 @@ import streamlit as st
 import tensorflow as tf
 
 # ── Paths ──────────────────────────────────────────────────────────────────────
-# Works both locally and on Streamlit Cloud
 BASE_DIR  = os.path.dirname(os.path.abspath(__file__))
 MODEL_DIR = os.path.join(BASE_DIR, "models")
 
@@ -58,25 +57,36 @@ def load_model(path):
     except Exception:
         pass
 
-    # Fallback: rebuild model architecture and load weights only
-    # This handles Keras version mismatches between local and cloud
+    # Fallback: rebuild architecture and load weights only
     try:
         from models import build_mobilenetv2, build_custom_cnn
         if "mobilenet" in path.lower():
-            model = build_mobilenetv2(phase=1)
+            for phase in [2, 1]:
+                try:
+                    model = build_mobilenetv2(phase=phase)
+                    model.load_weights(path, by_name=True, skip_mismatch=True)
+                    return model
+                except Exception:
+                    continue
         else:
-            model = build_custom_cnn()
-        model.load_weights(path, by_name=True, skip_mismatch=True)
-        return model
+            try:
+                model = build_custom_cnn()
+                model.load_weights(path, by_name=True, skip_mismatch=True)
+                return model
+            except Exception:
+                pass
     except Exception as e:
         st.error(f"❌ Failed to load model: {e}")
         st.stop()
 
+    st.error("❌ Could not load model with any method.")
+    st.stop()
+
 
 def predict(model, img):
-    img  = img.convert("RGB").resize((IMG_SIZE, IMG_SIZE))
-    arr  = np.array(img, dtype=np.float32) / 255.0
-    arr  = np.expand_dims(arr, 0)
+    img   = img.convert("RGB").resize((IMG_SIZE, IMG_SIZE))
+    arr   = np.array(img, dtype=np.float32) / 255.0
+    arr   = np.expand_dims(arr, 0)
     probs = model.predict(arr, verbose=0)[0]
     top   = int(np.argmax(probs))
     return CLASSES[top], float(probs[top]), probs
@@ -109,8 +119,12 @@ with st.sidebar:
     st.markdown("## ⚙️ Settings")
 
     available = {}
-    for name, fname in [("MobileNetV2 (recommended)", "mobilenetv2.h5"),
-                        ("Custom CNN", "custom_cnn.h5")]:
+    for name, fname in [
+        ("MobileNetV2 Best",        "mobilenetv2_best.h5"),
+        ("MobileNetV2",             "mobilenetv2.h5"),
+        ("Custom CNN Best",         "custom_cnn_best.h5"),
+        ("Custom CNN",              "custom_cnn.h5"),
+    ]:
         path = os.path.join(MODEL_DIR, fname)
         if os.path.exists(path):
             available[name] = path

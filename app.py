@@ -52,7 +52,25 @@ st.markdown("""
 
 @st.cache_resource(show_spinner="Loading model…")
 def load_model(path):
-    return tf.keras.models.load_model(path,compile=False)
+    # Try normal load first
+    try:
+        return tf.keras.models.load_model(path, compile=False)
+    except Exception:
+        pass
+
+    # Fallback: rebuild model architecture and load weights only
+    # This handles Keras version mismatches between local and cloud
+    try:
+        from models import build_mobilenetv2, build_custom_cnn
+        if "mobilenet" in path.lower():
+            model = build_mobilenetv2(phase=1)
+        else:
+            model = build_custom_cnn()
+        model.load_weights(path, by_name=True, skip_mismatch=True)
+        return model
+    except Exception as e:
+        st.error(f"❌ Failed to load model: {e}")
+        st.stop()
 
 
 def predict(model, img):

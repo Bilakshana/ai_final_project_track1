@@ -51,36 +51,7 @@ st.markdown("""
 
 @st.cache_resource(show_spinner="Loading model…")
 def load_model(path):
-    # Try normal load first
-    try:
-        return tf.keras.models.load_model(path, compile=False)
-    except Exception:
-        pass
-
-    # Fallback: rebuild architecture and load weights only
-    try:
-        from models import build_mobilenetv2, build_custom_cnn
-        if "mobilenet" in path.lower():
-            for phase in [2, 1]:
-                try:
-                    model = build_mobilenetv2(phase=phase)
-                    model.load_weights(path, by_name=True, skip_mismatch=True)
-                    return model
-                except Exception:
-                    continue
-        else:
-            try:
-                model = build_custom_cnn()
-                model.load_weights(path, by_name=True, skip_mismatch=True)
-                return model
-            except Exception:
-                pass
-    except Exception as e:
-        st.error(f"❌ Failed to load model: {e}")
-        st.stop()
-
-    st.error("❌ Could not load model with any method.")
-    st.stop()
+    return tf.keras.models.load_model(path, compile=False)
 
 
 def predict(model, img):
@@ -120,16 +91,15 @@ with st.sidebar:
 
     available = {}
     for name, fname in [
-        ("MobileNetV2 Best",        "mobilenetv2_best.h5"),
-        ("MobileNetV2",             "mobilenetv2.h5"),
-        ("Custom CNN Best",         "custom_cnn_best.h5"),
-        ("Custom CNN",              "custom_cnn.h5"),
+        ("MobileNetV2 Best",  "mobilenetv2_best.h5"),
+        ("MobileNetV2",       "mobilenetv2.h5"),
+        ("Custom CNN Best",   "custom_cnn_best.h5"),
+        ("Custom CNN",        "custom_cnn.h5"),
     ]:
         path = os.path.join(MODEL_DIR, fname)
         if os.path.exists(path):
             available[name] = path
 
-    # Debug — show what files exist in models/
     if not available:
         st.error("❌ No models found.")
         files = os.listdir(MODEL_DIR) if os.path.exists(MODEL_DIR) else []
